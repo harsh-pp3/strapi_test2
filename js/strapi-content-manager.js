@@ -70,21 +70,50 @@
     function applyContent(content) {
         console.log('🔍 Applying content:', content);
         
-        // Only update meta tags - no content replacement
-        if (content.htmlTitle) {
-            console.log('📝 Updating title from:', document.title, 'to:', content.htmlTitle);
-            document.title = content.htmlTitle;
+        // Update title
+        if (content.Meta_Title || content.htmlTitle) {
+            const newTitle = content.Meta_Title || content.htmlTitle;
+            console.log('📝 Updating title from:', document.title, 'to:', newTitle);
+            document.title = newTitle;
             console.log('✅ Title updated to:', document.title);
         }
         
-        if (content.metaDescription) {
-            console.log('📝 Updating meta description to:', content.metaDescription);
-            updateMeta('description', content.metaDescription);
+        // Update meta description
+        if (content.Meta_Description || content.metaDescription) {
+            const desc = content.Meta_Description || content.metaDescription;
+            console.log('📝 Updating meta description to:', desc);
+            updateMeta('description', desc);
         }
         
-        if (content.metaKeywords) {
-            console.log('📝 Updating meta keywords to:', content.metaKeywords);
-            updateMeta('keywords', content.metaKeywords);
+        // Update meta keywords
+        if (content.Keywords || content.metaKeywords) {
+            const keywords = content.Keywords || content.metaKeywords;
+            console.log('📝 Updating meta keywords to:', keywords);
+            updateMeta('keywords', keywords);
+        }
+        
+        // Update canonical URL
+        if (content.Canonical_URL) {
+            console.log('📝 Updating canonical URL to:', content.Canonical_URL);
+            updateCanonical(content.Canonical_URL);
+        }
+        
+        // Update robots tag
+        if (content.Robots_Tag) {
+            console.log('📝 Updating robots tag to:', content.Robots_Tag);
+            updateMeta('robots', content.Robots_Tag);
+        }
+        
+        // Update author tag
+        if (content.Author_Meta_Tag) {
+            console.log('📝 Updating author tag to:', content.Author_Meta_Tag);
+            updateMeta('author', content.Author_Meta_Tag);
+        }
+        
+        // Update publisher tag
+        if (content.Publisher_Meta_Tag) {
+            console.log('📝 Updating publisher tag to:', content.Publisher_Meta_Tag);
+            updateMeta('publisher', content.Publisher_Meta_Tag);
         }
     }
     
@@ -94,13 +123,47 @@
             meta.content = content;
             console.log(`✅ Updated meta ${name}:`, content);
         } else {
-            console.log(`⚠️ Meta tag ${name} not found`);
+            // Create meta tag if it doesn't exist
+            meta = document.createElement('meta');
+            meta.name = name;
+            meta.content = content;
+            document.head.appendChild(meta);
+            console.log(`✅ Created meta ${name}:`, content);
         }
+    }
+    
+    function updateCanonical(url) {
+        let canonical = document.querySelector('link[rel="canonical"]');
+        if (canonical) {
+            canonical.href = url;
+            console.log('✅ Updated canonical URL:', url);
+        } else {
+            canonical = document.createElement('link');
+            canonical.rel = 'canonical';
+            canonical.href = url;
+            document.head.appendChild(canonical);
+            console.log('✅ Created canonical URL:', url);
+        }
+    }
+    
+    function getCurrentMetaTags() {
+        const metaTags = {
+            title: document.title,
+            description: document.querySelector('meta[name="description"]')?.content || '',
+            keywords: document.querySelector('meta[name="keywords"]')?.content || '',
+            canonical: document.querySelector('link[rel="canonical"]')?.href || '',
+            robots: document.querySelector('meta[name="robots"]')?.content || '',
+            author: document.querySelector('meta[name="author"]')?.content || '',
+            publisher: document.querySelector('meta[name="publisher"]')?.content || ''
+        };
+        console.log('📋 Current meta tags:', metaTags);
+        return metaTags;
     }
     
 
     
     document.addEventListener('DOMContentLoaded', loadContent);
     window.refreshCMS = loadContent;
+    window.getCurrentMetaTags = getCurrentMetaTags;
     
 })();
