@@ -158,44 +158,42 @@
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = newContent;
         
-        // Get all elements with IDs or specific selectors from new content
-        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div[id], section[id], article[id]');
+        // Get only text-containing elements from new content
+        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, div, li, td, th, a, strong, em, b, i, u');
         
         newElements.forEach((newEl, newIndex) => {
             const tagName = newEl.tagName.toLowerCase();
+            const newTextContent = newEl.textContent.trim();
+            
+            // Skip empty elements
+            if (!newTextContent) return;
             
             // If element has an ID, use ID selector
             if (newEl.id) {
                 const existingEl = document.querySelector(`#${newEl.id}`);
-                if (existingEl) {
-                    existingEl.innerHTML = newEl.innerHTML;
-                    console.log(`✅ Updated element: #${newEl.id}`);
-                } else {
-                    console.log(`ℹ️ Element not found: #${newEl.id}`);
+                if (existingEl && existingEl.textContent.trim() !== newTextContent) {
+                    existingEl.textContent = newTextContent;
+                    console.log(`✅ Updated text in element: #${newEl.id}`);
                 }
                 return;
             }
             
-            // For elements without ID, try multiple matching strategies
+            // For elements without ID, match by tag type and position
             const existingElements = document.querySelectorAll(tagName);
-            let matchFound = false;
             
             if (existingElements.length > 0) {
-                // Strategy 1: Try position-based matching first
-                if (newIndex < existingElements.length) {
-                    existingElements[newIndex].innerHTML = newEl.innerHTML;
-                    console.log(`✅ Updated ${tagName} at position ${newIndex}`);
-                    matchFound = true;
-                } else {
-                    // Strategy 2: Update the first element of this type
-                    existingElements[0].innerHTML = newEl.innerHTML;
-                    console.log(`✅ Updated first ${tagName} element`);
-                    matchFound = true;
+                // Find elements of same type from the new content
+                const newElementsOfSameType = Array.from(tempDiv.querySelectorAll(tagName));
+                const positionInType = newElementsOfSameType.indexOf(newEl);
+                
+                // Update the corresponding element by position within that tag type
+                if (positionInType < existingElements.length) {
+                    const existingEl = existingElements[positionInType];
+                    if (existingEl.textContent.trim() !== newTextContent) {
+                        existingEl.textContent = newTextContent;
+                        console.log(`✅ Updated text in ${tagName} at position ${positionInType}`);
+                    }
                 }
-            }
-            
-            if (!matchFound) {
-                console.log(`ℹ️ No ${tagName} elements found on page`);
             }
         });
     }
