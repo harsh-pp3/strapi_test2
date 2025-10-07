@@ -191,7 +191,7 @@
                     console.log(`🆕 New text: "${newTextContent.substring(0, 50)}..."`);
                     
                     if (existingEl.textContent.trim() !== newTextContent) {
-                        existingEl.textContent = newTextContent;
+                        updateOnlyDirectText(existingEl, newTextContent);
                         console.log(`✅ Updated text in element: #${newEl.id}`);
                     } else {
                         console.log(`ℹ️ Text already matches for #${newEl.id}`);
@@ -220,7 +220,7 @@
                     console.log(`🆕 New text: "${newTextContent.substring(0, 50)}..."`);
                     
                     if (existingEl.textContent.trim() !== newTextContent) {
-                        existingEl.textContent = newTextContent;
+                        updateOnlyDirectText(existingEl, newTextContent);
                         console.log(`✅ Updated text in ${tagName} at position ${positionInType}`);
                     } else {
                         console.log(`ℹ️ Text already matches for ${tagName} at position ${positionInType}`);
@@ -234,6 +234,23 @@
         });
         
         console.log('✅ Body content update completed');
+    }
+    
+    function updateOnlyDirectText(element, newText) {
+        // Find the first direct text node and update only that
+        for (let i = 0; i < element.childNodes.length; i++) {
+            const node = element.childNodes[i];
+            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+                node.textContent = newText;
+                console.log('✅ Updated direct text node only');
+                return;
+            }
+        }
+        
+        // If no text node found, create one at the beginning
+        const textNode = document.createTextNode(newText);
+        element.insertBefore(textNode, element.firstChild);
+        console.log('✅ Created new direct text node');
     }
     
     function updateTextNodesOnly(element, newText) {
