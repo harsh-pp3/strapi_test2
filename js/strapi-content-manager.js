@@ -122,7 +122,6 @@
         // Update body content
         if (content.bodyContent) {
             console.log('📝 Updating body content');
-            console.log('📝 Body content from Strapi:', content.bodyContent);
             updateBodyContentSafe(content.bodyContent);
         }
     }
@@ -161,75 +160,42 @@
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = newContent;
         
-        // Get ALL elements from new content for debugging
-        const allNewElements = tempDiv.querySelectorAll('*');
-        console.log(`📋 Found ${allNewElements.length} elements in new content`);
-        
         // Get text-containing elements from new content
         const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, li, td, th, a, strong, em, b, i, u, div');
-        console.log(`📋 Found ${newElements.length} text elements to process`);
         
         newElements.forEach((newEl, newIndex) => {
             const tagName = newEl.tagName.toLowerCase();
             const newTextContent = newEl.textContent.trim();
             
-            console.log(`🔍 Processing ${tagName} with text: "${newTextContent.substring(0, 50)}..."`);
-            
             // Skip empty elements
-            if (!newTextContent) {
-                console.log('⚠️ Skipping empty element');
-                return;
-            }
+            if (!newTextContent) return;
             
             // If element has an ID, use ID selector for precise matching
             if (newEl.id) {
-                console.log(`🎯 Looking for element with ID: #${newEl.id}`);
                 const existingEl = document.querySelector(`#${newEl.id}`);
-                if (existingEl) {
-                    console.log(`✅ Found existing element with ID: #${newEl.id}`);
-                    console.log(`🔄 Current text: "${existingEl.textContent.trim().substring(0, 50)}..."`);
-                    console.log(`🆕 New text: "${newTextContent.substring(0, 50)}..."`);
-                    
-                    if (existingEl.textContent.trim() !== newTextContent) {
-                        updateOnlyDirectText(existingEl, newTextContent);
-                        console.log(`✅ Updated text in element: #${newEl.id}`);
-                    } else {
-                        console.log(`ℹ️ Text already matches for #${newEl.id}`);
-                    }
-                } else {
-                    console.log(`⚠️ Element not found: #${newEl.id}`);
+                if (existingEl && existingEl.textContent.trim() !== newTextContent) {
+                    updateOnlyDirectText(existingEl, newTextContent);
+                    console.log(`✅ Updated text in element: #${newEl.id}`);
                 }
                 return;
             }
             
             // For elements without ID, match by tag type and position
             const existingElements = document.querySelectorAll(tagName);
-            console.log(`🔍 Found ${existingElements.length} existing ${tagName} elements`);
             
             if (existingElements.length > 0) {
                 // Find elements of same type from the new content
                 const newElementsOfSameType = Array.from(tempDiv.querySelectorAll(tagName));
                 const positionInType = newElementsOfSameType.indexOf(newEl);
                 
-                console.log(`📍 Position of this ${tagName} in new content: ${positionInType}`);
-                
                 // Update the corresponding element by position within that tag type
                 if (positionInType < existingElements.length) {
                     const existingEl = existingElements[positionInType];
-                    console.log(`🔄 Current text: "${existingEl.textContent.trim().substring(0, 50)}..."`);
-                    console.log(`🆕 New text: "${newTextContent.substring(0, 50)}..."`);
-                    
                     if (existingEl.textContent.trim() !== newTextContent) {
                         updateOnlyDirectText(existingEl, newTextContent);
                         console.log(`✅ Updated text in ${tagName} at position ${positionInType}`);
-                    } else {
-                        console.log(`ℹ️ Text already matches for ${tagName} at position ${positionInType}`);
                     }
-                } else {
-                    console.log(`⚠️ Position ${positionInType} exceeds available ${tagName} elements`);
                 }
-            } else {
-                console.log(`⚠️ No existing ${tagName} elements found`);
             }
         });
         
@@ -253,52 +219,6 @@
         console.log('✅ Created new direct text node');
     }
     
-    function updateTextNodesOnly(element, newText) {
-        // Find and update only text nodes, preserve all HTML structure
-        const walker = document.createTreeWalker(
-            element,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-        
-        const textNodes = [];
-        let node;
-        while (node = walker.nextNode()) {
-            if (node.textContent.trim()) {
-                textNodes.push(node);
-            }
-        }
-        
-        // Update the first significant text node
-        if (textNodes.length > 0) {
-            textNodes[0].textContent = newText;
-        }
-    }
-    
-    function getDirectTextContent(element) {
-        // Get only direct text nodes, not text from child elements
-        let directText = '';
-        for (let node of element.childNodes) {
-            if (node.nodeType === Node.TEXT_NODE) {
-                directText += node.textContent;
-            }
-        }
-        return directText;
-    }
-    
-    function updateDirectTextContent(element, newText) {
-        // Update only direct text nodes, preserve all child elements
-        for (let node of element.childNodes) {
-            if (node.nodeType === Node.TEXT_NODE) {
-                node.textContent = newText;
-                return; // Update only the first text node
-            }
-        }
-        // If no text node exists, create one at the beginning
-        element.insertBefore(document.createTextNode(newText), element.firstChild);
-    }
-    
     function getCurrentMetaTags() {
         const metaTags = {
             title: document.title,
@@ -312,8 +232,6 @@
         console.log('📋 Current meta tags:', metaTags);
         return metaTags;
     }
-    
-
     
     document.addEventListener('DOMContentLoaded', loadContent);
     window.refreshCMS = loadContent;
