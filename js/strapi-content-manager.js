@@ -119,9 +119,10 @@
             updateMeta('publisher', content.Publisher_Meta_Tag);
         }
         
-        // Update body content very selectively - only ID-based elements
+        // Update body content
         if (content.bodyContent) {
-            console.log('📝 Updating body content (ID-based only)');
+            console.log('📝 Updating body content');
+            console.log('📝 Body content from Strapi:', content.bodyContent);
             updateBodyContentSafe(content.bodyContent);
         }
     }
@@ -154,49 +155,85 @@
     }
     
     function updateBodyContentSafe(newContent) {
+        console.log('🔍 Starting body content update...');
+        
         // Create a temporary container to parse the new content
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = newContent;
         
+        // Get ALL elements from new content for debugging
+        const allNewElements = tempDiv.querySelectorAll('*');
+        console.log(`📋 Found ${allNewElements.length} elements in new content`);
+        
         // Get text-containing elements from new content
-        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, li, td, th, a, strong, em, b, i, u');
+        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, li, td, th, a, strong, em, b, i, u, div');
+        console.log(`📋 Found ${newElements.length} text elements to process`);
         
         newElements.forEach((newEl, newIndex) => {
             const tagName = newEl.tagName.toLowerCase();
             const newTextContent = newEl.textContent.trim();
             
+            console.log(`🔍 Processing ${tagName} with text: "${newTextContent.substring(0, 50)}..."`);
+            
             // Skip empty elements
-            if (!newTextContent) return;
+            if (!newTextContent) {
+                console.log('⚠️ Skipping empty element');
+                return;
+            }
             
             // If element has an ID, use ID selector for precise matching
             if (newEl.id) {
+                console.log(`🎯 Looking for element with ID: #${newEl.id}`);
                 const existingEl = document.querySelector(`#${newEl.id}`);
-                if (existingEl && existingEl.textContent.trim() !== newTextContent) {
-                    // Preserve all child elements, only update text nodes
-                    updateTextNodesOnly(existingEl, newTextContent);
-                    console.log(`✅ Updated text in element: #${newEl.id}`);
+                if (existingEl) {
+                    console.log(`✅ Found existing element with ID: #${newEl.id}`);
+                    console.log(`🔄 Current text: "${existingEl.textContent.trim().substring(0, 50)}..."`);
+                    console.log(`🆕 New text: "${newTextContent.substring(0, 50)}..."`);
+                    
+                    if (existingEl.textContent.trim() !== newTextContent) {
+                        existingEl.textContent = newTextContent;
+                        console.log(`✅ Updated text in element: #${newEl.id}`);
+                    } else {
+                        console.log(`ℹ️ Text already matches for #${newEl.id}`);
+                    }
+                } else {
+                    console.log(`⚠️ Element not found: #${newEl.id}`);
                 }
                 return;
             }
             
             // For elements without ID, match by tag type and position
             const existingElements = document.querySelectorAll(tagName);
+            console.log(`🔍 Found ${existingElements.length} existing ${tagName} elements`);
             
             if (existingElements.length > 0) {
                 // Find elements of same type from the new content
                 const newElementsOfSameType = Array.from(tempDiv.querySelectorAll(tagName));
                 const positionInType = newElementsOfSameType.indexOf(newEl);
                 
+                console.log(`📍 Position of this ${tagName} in new content: ${positionInType}`);
+                
                 // Update the corresponding element by position within that tag type
                 if (positionInType < existingElements.length) {
                     const existingEl = existingElements[positionInType];
+                    console.log(`🔄 Current text: "${existingEl.textContent.trim().substring(0, 50)}..."`);
+                    console.log(`🆕 New text: "${newTextContent.substring(0, 50)}..."`);
+                    
                     if (existingEl.textContent.trim() !== newTextContent) {
-                        updateTextNodesOnly(existingEl, newTextContent);
+                        existingEl.textContent = newTextContent;
                         console.log(`✅ Updated text in ${tagName} at position ${positionInType}`);
+                    } else {
+                        console.log(`ℹ️ Text already matches for ${tagName} at position ${positionInType}`);
                     }
+                } else {
+                    console.log(`⚠️ Position ${positionInType} exceeds available ${tagName} elements`);
                 }
+            } else {
+                console.log(`⚠️ No existing ${tagName} elements found`);
             }
         });
+        
+        console.log('✅ Body content update completed');
     }
     
     function updateTextNodesOnly(element, newText) {
