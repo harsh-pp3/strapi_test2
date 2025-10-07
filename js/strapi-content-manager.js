@@ -118,6 +118,12 @@
             console.log('📝 Updating publisher tag to:', content.Publisher_Meta_Tag);
             updateMeta('publisher', content.Publisher_Meta_Tag);
         }
+        
+        // Update body content selectively
+        if (content.bodyContent) {
+            console.log('📝 Updating body content selectively');
+            updateBodyContent(content.bodyContent);
+        }
     }
     
     function updateMeta(name, content) {
@@ -145,6 +151,55 @@
             document.head.appendChild(canonical);
             console.log('✅ Created canonical URL:', url);
         }
+    }
+    
+    function updateBodyContent(newContent) {
+        // Create a temporary container to parse the new content
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newContent;
+        
+        // Get all elements with IDs or specific selectors from new content
+        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div[id], section[id], article[id]');
+        
+        newElements.forEach(newEl => {
+            let selector;
+            
+            // If element has an ID, use ID selector
+            if (newEl.id) {
+                selector = `#${newEl.id}`;
+            } else {
+                // For headings and paragraphs, try to match by content or position
+                const tagName = newEl.tagName.toLowerCase();
+                const textContent = newEl.textContent.trim().substring(0, 50);
+                
+                // Try to find existing element with same tag and similar content
+                const existingElements = document.querySelectorAll(tagName);
+                let matchFound = false;
+                
+                existingElements.forEach((existingEl, index) => {
+                    const existingText = existingEl.textContent.trim().substring(0, 50);
+                    if (existingText === textContent) {
+                        existingEl.innerHTML = newEl.innerHTML;
+                        console.log(`✅ Updated ${tagName} with matching content`);
+                        matchFound = true;
+                    }
+                });
+                
+                if (!matchFound) {
+                    console.log(`ℹ️ No matching ${tagName} found for selective update`);
+                }
+                return;
+            }
+            
+            // Update element if it exists
+            const existingEl = document.querySelector(selector);
+            if (existingEl) {
+                existingEl.innerHTML = newEl.innerHTML;
+                console.log(`✅ Updated element: ${selector}`);
+            } else {
+                console.log(`ℹ️ Element not found: ${selector}`);
+            }
+        });
     }
     
     function getCurrentMetaTags() {
