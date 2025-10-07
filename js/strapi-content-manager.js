@@ -158,23 +158,68 @@
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = newContent;
         
-        // ONLY update elements that have IDs - much safer approach
-        const newElementsWithIds = tempDiv.querySelectorAll('[id]');
+        // Get text-containing elements from new content
+        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, li, td, th, a, strong, em, b, i, u');
         
-        newElementsWithIds.forEach(newEl => {
-            const existingEl = document.querySelector(`#${newEl.id}`);
-            if (existingEl) {
-                // Only update if the content is actually different
-                if (existingEl.innerHTML !== newEl.innerHTML) {
-                    existingEl.innerHTML = newEl.innerHTML;
-                    console.log(`✅ Updated element with ID: #${newEl.id}`);
+        newElements.forEach((newEl, newIndex) => {
+            const tagName = newEl.tagName.toLowerCase();
+            const newTextContent = newEl.textContent.trim();
+            
+            // Skip empty elements
+            if (!newTextContent) return;
+            
+            // If element has an ID, use ID selector for precise matching
+            if (newEl.id) {
+                const existingEl = document.querySelector(`#${newEl.id}`);
+                if (existingEl && existingEl.textContent.trim() !== newTextContent) {
+                    // Preserve all child elements, only update text nodes
+                    updateTextNodesOnly(existingEl, newTextContent);
+                    console.log(`✅ Updated text in element: #${newEl.id}`);
                 }
-            } else {
-                console.log(`ℹ️ Element not found: #${newEl.id}`);
+                return;
+            }
+            
+            // For elements without ID, match by tag type and position
+            const existingElements = document.querySelectorAll(tagName);
+            
+            if (existingElements.length > 0) {
+                // Find elements of same type from the new content
+                const newElementsOfSameType = Array.from(tempDiv.querySelectorAll(tagName));
+                const positionInType = newElementsOfSameType.indexOf(newEl);
+                
+                // Update the corresponding element by position within that tag type
+                if (positionInType < existingElements.length) {
+                    const existingEl = existingElements[positionInType];
+                    if (existingEl.textContent.trim() !== newTextContent) {
+                        updateTextNodesOnly(existingEl, newTextContent);
+                        console.log(`✅ Updated text in ${tagName} at position ${positionInType}`);
+                    }
+                }
             }
         });
+    }
+    
+    function updateTextNodesOnly(element, newText) {
+        // Find and update only text nodes, preserve all HTML structure
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
         
-        console.log(`📋 Updated ${newElementsWithIds.length} elements with IDs`);
+        const textNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+            if (node.textContent.trim()) {
+                textNodes.push(node);
+            }
+        }
+        
+        // Update the first significant text node
+        if (textNodes.length > 0) {
+            textNodes[0].textContent = newText;
+        }
     }
     
     function getDirectTextContent(element) {
