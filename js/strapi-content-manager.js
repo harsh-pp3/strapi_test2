@@ -161,43 +161,41 @@
         // Get all elements with IDs or specific selectors from new content
         const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div[id], section[id], article[id]');
         
-        newElements.forEach(newEl => {
-            let selector;
+        newElements.forEach((newEl, newIndex) => {
+            const tagName = newEl.tagName.toLowerCase();
             
             // If element has an ID, use ID selector
             if (newEl.id) {
-                selector = `#${newEl.id}`;
-            } else {
-                // For headings and paragraphs, try to match by content or position
-                const tagName = newEl.tagName.toLowerCase();
-                const textContent = newEl.textContent.trim().substring(0, 50);
-                
-                // Try to find existing element with same tag and similar content
-                const existingElements = document.querySelectorAll(tagName);
-                let matchFound = false;
-                
-                existingElements.forEach((existingEl, index) => {
-                    const existingText = existingEl.textContent.trim().substring(0, 50);
-                    if (existingText === textContent) {
-                        existingEl.innerHTML = newEl.innerHTML;
-                        console.log(`✅ Updated ${tagName} with matching content`);
-                        matchFound = true;
-                    }
-                });
-                
-                if (!matchFound) {
-                    console.log(`ℹ️ No matching ${tagName} found for selective update`);
+                const existingEl = document.querySelector(`#${newEl.id}`);
+                if (existingEl) {
+                    existingEl.innerHTML = newEl.innerHTML;
+                    console.log(`✅ Updated element: #${newEl.id}`);
+                } else {
+                    console.log(`ℹ️ Element not found: #${newEl.id}`);
                 }
                 return;
             }
             
-            // Update element if it exists
-            const existingEl = document.querySelector(selector);
-            if (existingEl) {
-                existingEl.innerHTML = newEl.innerHTML;
-                console.log(`✅ Updated element: ${selector}`);
-            } else {
-                console.log(`ℹ️ Element not found: ${selector}`);
+            // For elements without ID, try multiple matching strategies
+            const existingElements = document.querySelectorAll(tagName);
+            let matchFound = false;
+            
+            if (existingElements.length > 0) {
+                // Strategy 1: Try position-based matching first
+                if (newIndex < existingElements.length) {
+                    existingElements[newIndex].innerHTML = newEl.innerHTML;
+                    console.log(`✅ Updated ${tagName} at position ${newIndex}`);
+                    matchFound = true;
+                } else {
+                    // Strategy 2: Update the first element of this type
+                    existingElements[0].innerHTML = newEl.innerHTML;
+                    console.log(`✅ Updated first ${tagName} element`);
+                    matchFound = true;
+                }
+            }
+            
+            if (!matchFound) {
+                console.log(`ℹ️ No ${tagName} elements found on page`);
             }
         });
     }
