@@ -70,26 +70,29 @@
     function applyContent(content) {
         console.log('🔍 Applying content:', content);
         
-        // Update title
-        if (content.Meta_Title || content.htmlTitle) {
-            const newTitle = content.Meta_Title || content.htmlTitle;
-            console.log('📝 Updating title from:', document.title, 'to:', newTitle);
-            document.title = newTitle;
-            console.log('✅ Title updated to:', document.title);
+        // Update HTML title (keep htmlTitle separate)
+        if (content.htmlTitle) {
+            console.log('📝 Updating HTML title from:', document.title, 'to:', content.htmlTitle);
+            document.title = content.htmlTitle;
+            console.log('✅ HTML title updated to:', document.title);
         }
         
-        // Update meta description
-        if (content.Meta_Description || content.metaDescription) {
-            const desc = content.Meta_Description || content.metaDescription;
-            console.log('📝 Updating meta description to:', desc);
-            updateMeta('description', desc);
+        // Update meta title (separate from HTML title)
+        if (content.Meta_Title) {
+            console.log('📝 Updating meta title to:', content.Meta_Title);
+            updateMeta('title', content.Meta_Title);
         }
         
-        // Update meta keywords
-        if (content.Keywords || content.metaKeywords) {
-            const keywords = content.Keywords || content.metaKeywords;
-            console.log('📝 Updating meta keywords to:', keywords);
-            updateMeta('keywords', keywords);
+        // Update meta description (use only new field)
+        if (content.Meta_Description) {
+            console.log('📝 Updating meta description to:', content.Meta_Description);
+            updateMeta('description', content.Meta_Description);
+        }
+        
+        // Update meta keywords (use only new field)
+        if (content.Keywords) {
+            console.log('📝 Updating meta keywords to:', content.Keywords);
+            updateMeta('keywords', content.Keywords);
         }
         
         // Update canonical URL
@@ -118,18 +121,16 @@
     }
     
     function updateMeta(name, content) {
-        let meta = document.querySelector(`meta[name="${name}"]`);
-        if (meta) {
-            meta.content = content;
-            console.log(`✅ Updated meta ${name}:`, content);
-        } else {
-            // Create meta tag if it doesn't exist
-            meta = document.createElement('meta');
-            meta.name = name;
-            meta.content = content;
-            document.head.appendChild(meta);
-            console.log(`✅ Created meta ${name}:`, content);
-        }
+        // Remove all existing meta tags with this name to avoid duplicates
+        const existingMetas = document.querySelectorAll(`meta[name="${name}"]`);
+        existingMetas.forEach(meta => meta.remove());
+        
+        // Create new meta tag
+        const meta = document.createElement('meta');
+        meta.name = name;
+        meta.content = content;
+        document.head.appendChild(meta);
+        console.log(`✅ Updated meta ${name}:`, content);
     }
     
     function updateCanonical(url) {
