@@ -159,21 +159,24 @@
         tempDiv.innerHTML = newContent;
         
         // Get only text-containing elements from new content
-        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, div, li, td, th, a, strong, em, b, i, u');
+        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, li, td, th, a, strong, em, b, i, u');
         
         newElements.forEach((newEl, newIndex) => {
             const tagName = newEl.tagName.toLowerCase();
-            const newTextContent = newEl.textContent.trim();
             
-            // Skip empty elements
-            if (!newTextContent) return;
+            // Get only direct text nodes from the new element
+            const newDirectText = getDirectTextContent(newEl);
+            if (!newDirectText.trim()) return;
             
             // If element has an ID, use ID selector
             if (newEl.id) {
                 const existingEl = document.querySelector(`#${newEl.id}`);
-                if (existingEl && existingEl.textContent.trim() !== newTextContent) {
-                    existingEl.textContent = newTextContent;
-                    console.log(`✅ Updated text in element: #${newEl.id}`);
+                if (existingEl) {
+                    const existingDirectText = getDirectTextContent(existingEl);
+                    if (existingDirectText.trim() !== newDirectText.trim()) {
+                        updateDirectTextContent(existingEl, newDirectText);
+                        console.log(`✅ Updated direct text in element: #${newEl.id}`);
+                    }
                 }
                 return;
             }
@@ -189,13 +192,37 @@
                 // Update the corresponding element by position within that tag type
                 if (positionInType < existingElements.length) {
                     const existingEl = existingElements[positionInType];
-                    if (existingEl.textContent.trim() !== newTextContent) {
-                        existingEl.textContent = newTextContent;
-                        console.log(`✅ Updated text in ${tagName} at position ${positionInType}`);
+                    const existingDirectText = getDirectTextContent(existingEl);
+                    if (existingDirectText.trim() !== newDirectText.trim()) {
+                        updateDirectTextContent(existingEl, newDirectText);
+                        console.log(`✅ Updated direct text in ${tagName} at position ${positionInType}`);
                     }
                 }
             }
         });
+    }
+    
+    function getDirectTextContent(element) {
+        // Get only direct text nodes, not text from child elements
+        let directText = '';
+        for (let node of element.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                directText += node.textContent;
+            }
+        }
+        return directText;
+    }
+    
+    function updateDirectTextContent(element, newText) {
+        // Update only direct text nodes, preserve all child elements
+        for (let node of element.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                node.textContent = newText;
+                return; // Update only the first text node
+            }
+        }
+        // If no text node exists, create one at the beginning
+        element.insertBefore(document.createTextNode(newText), element.firstChild);
     }
     
     function getCurrentMetaTags() {
