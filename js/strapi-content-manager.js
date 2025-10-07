@@ -119,10 +119,10 @@
             updateMeta('publisher', content.Publisher_Meta_Tag);
         }
         
-        // Update body content selectively
+        // Update body content very selectively - only ID-based elements
         if (content.bodyContent) {
-            console.log('📝 Updating body content selectively');
-            updateBodyContent(content.bodyContent);
+            console.log('📝 Updating body content (ID-based only)');
+            updateBodyContentSafe(content.bodyContent);
         }
     }
     
@@ -153,53 +153,28 @@
         }
     }
     
-    function updateBodyContent(newContent) {
+    function updateBodyContentSafe(newContent) {
         // Create a temporary container to parse the new content
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = newContent;
         
-        // Get only text-containing elements from new content
-        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, li, td, th, a, strong, em, b, i, u');
+        // ONLY update elements that have IDs - much safer approach
+        const newElementsWithIds = tempDiv.querySelectorAll('[id]');
         
-        newElements.forEach((newEl, newIndex) => {
-            const tagName = newEl.tagName.toLowerCase();
-            
-            // Get only direct text nodes from the new element
-            const newDirectText = getDirectTextContent(newEl);
-            if (!newDirectText.trim()) return;
-            
-            // If element has an ID, use ID selector
-            if (newEl.id) {
-                const existingEl = document.querySelector(`#${newEl.id}`);
-                if (existingEl) {
-                    const existingDirectText = getDirectTextContent(existingEl);
-                    if (existingDirectText.trim() !== newDirectText.trim()) {
-                        updateDirectTextContent(existingEl, newDirectText);
-                        console.log(`✅ Updated direct text in element: #${newEl.id}`);
-                    }
+        newElementsWithIds.forEach(newEl => {
+            const existingEl = document.querySelector(`#${newEl.id}`);
+            if (existingEl) {
+                // Only update if the content is actually different
+                if (existingEl.innerHTML !== newEl.innerHTML) {
+                    existingEl.innerHTML = newEl.innerHTML;
+                    console.log(`✅ Updated element with ID: #${newEl.id}`);
                 }
-                return;
-            }
-            
-            // For elements without ID, match by tag type and position
-            const existingElements = document.querySelectorAll(tagName);
-            
-            if (existingElements.length > 0) {
-                // Find elements of same type from the new content
-                const newElementsOfSameType = Array.from(tempDiv.querySelectorAll(tagName));
-                const positionInType = newElementsOfSameType.indexOf(newEl);
-                
-                // Update the corresponding element by position within that tag type
-                if (positionInType < existingElements.length) {
-                    const existingEl = existingElements[positionInType];
-                    const existingDirectText = getDirectTextContent(existingEl);
-                    if (existingDirectText.trim() !== newDirectText.trim()) {
-                        updateDirectTextContent(existingEl, newDirectText);
-                        console.log(`✅ Updated direct text in ${tagName} at position ${positionInType}`);
-                    }
-                }
+            } else {
+                console.log(`ℹ️ Element not found: #${newEl.id}`);
             }
         });
+        
+        console.log(`📋 Updated ${newElementsWithIds.length} elements with IDs`);
     }
     
     function getDirectTextContent(element) {
