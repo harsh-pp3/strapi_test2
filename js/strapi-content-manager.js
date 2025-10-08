@@ -91,41 +91,50 @@
     }
     
     function updateBodyContent(newContent) {
-        console.log('🔍 Starting body content update...');
+        console.log('🔍 Starting smart diff-based update...');
         
         // Parse Strapi content
-        const temp = document.createElement('div');
-        temp.innerHTML = newContent;
+        const strapiDoc = document.createElement('div');
+        strapiDoc.innerHTML = newContent;
         
-        // Get h tags and p tags from Strapi content
-        const newElements = temp.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
-        console.log('🔍 Found', newElements.length, 'elements in Strapi content');
+        // Get h and p tags from Strapi
+        const strapiElements = strapiDoc.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
         
-        // For each element in Strapi content
-        newElements.forEach((newEl, index) => {
-            const tag = newEl.tagName.toLowerCase();
-            const newText = newEl.textContent.trim();
-            if (!newText) return;
+        // Get h and p tags from current page
+        const mainContent = document.querySelector('article') || document.querySelector('main') || document.body;
+        const pageElements = mainContent.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
+        
+        console.log(`🔍 Strapi has ${strapiElements.length} elements, Page has ${pageElements.length} elements`);
+        
+        let updated = 0;
+        
+        // Compare each Strapi element with page elements
+        strapiElements.forEach((strapiEl) => {
+            const strapiTag = strapiEl.tagName.toLowerCase();
+            const strapiText = strapiEl.textContent.trim();
+            if (!strapiText) return;
             
-            console.log(`🔍 Processing ${tag} #${index}: "${newText.substring(0, 50)}..."`);
-            
-            // Find all elements of same tag in main content area
-            const mainContent = document.querySelector('article') || document.querySelector('main') || document.body;
-            const pageElements = mainContent.querySelectorAll(tag);
-            
-            console.log(`🔍 Found ${pageElements.length} ${tag} elements in page`);
-            
-            // Update element at same position
-            if (pageElements[index]) {
-                const oldText = pageElements[index].textContent.trim();
-                pageElements[index].textContent = newText;
-                console.log(`✅ Updated ${tag} #${index}: "${oldText.substring(0, 30)}..." -> "${newText.substring(0, 30)}..."`);
-            } else {
-                console.log(`⚠️ No ${tag} element at position ${index}`);
+            // Find matching element in page by comparing text similarity
+            for (let pageEl of pageElements) {
+                if (pageEl.tagName.toLowerCase() !== strapiTag) continue;
+                
+                const pageText = pageEl.textContent.trim();
+                
+                // Check if texts are similar (first 30 chars match) but not identical
+                const strapiStart = strapiText.substring(0, 30).toLowerCase();
+                const pageStart = pageText.substring(0, 30).toLowerCase();
+                
+                if (strapiStart === pageStart && strapiText !== pageText) {
+                    // Found a match - text starts the same but has been edited
+                    pageEl.textContent = strapiText;
+                    updated++;
+                    console.log(`✅ Updated ${strapiTag}: "${pageText.substring(0, 40)}..." -> "${strapiText.substring(0, 40)}..."`);
+                    break;
+                }
             }
         });
         
-        console.log('✅ Body content update complete');
+        console.log(`✅ Updated ${updated} elements based on changes`);
     }
     
     document.addEventListener('DOMContentLoaded', loadContent);
