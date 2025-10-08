@@ -1,4 +1,4 @@
-// Strapi Content Manager - Works with existing GitHub plugin structure
+// Strapi Content Manager - Only updates meta tags, never touches page content
 (function() {
     const STRAPI_URL = 'http://localhost:1337';
     
@@ -9,232 +9,88 @@
     
     async function loadContent() {
         const fileName = getPageFileName();
-        console.log('🔍 Loading content for:', fileName);
         
         try {
             const response = await fetch(`${STRAPI_URL}/api/github-html-files?populate=*`);
-            
-            if (!response.ok) {
-                console.log('❌ Strapi API not available');
-                return;
-            }
+            if (!response.ok) return;
             
             const data = await response.json();
-            console.log('📦 API Response:', data);
-            console.log('🔍 Available files:', data.data?.map(item => item.attributes.fileName));
-            console.log('📋 All entries with details:');
-            data.data?.forEach((item, index) => {
-                console.log(`  ${index + 1}. fileName: "${item.attributes.fileName}" | Published: ${!!item.attributes.publishedAt}`);
-            });
+            if (!data.data || data.data.length === 0) return;
             
-            if (data.data && data.data.length > 0) {
-                // Try exact match first, then try with/without .html
-                let content = data.data.find(item => item.attributes.fileName === fileName);
-                
-                if (!content) {
-                    // Try without .html extension
-                    const baseFileName = fileName.replace('.html', '');
-                    content = data.data.find(item => item.attributes.fileName === baseFileName);
-                }
-                
-                if (!content) {
-                    // Try with .html extension
-                    const fullFileName = fileName.includes('.html') ? fileName : fileName + '.html';
-                    content = data.data.find(item => item.attributes.fileName === fullFileName);
-                }
-                
-                console.log('🔎 Found matching content:', !!content);
-                if (content) {
-                    console.log('📄 Matched entry:', content.attributes.fileName, 'Published:', !!content.attributes.publishedAt);
-                }
-                
-                if (content && content.attributes.publishedAt) {
-                    console.log('📝 Content to apply:', content.attributes);
-                    applyContent(content.attributes);
-                    console.log('✅ Content applied');
-                } else if (content) {
-                    console.log('ℹ️ Content found but NOT PUBLISHED for:', content.attributes.fileName);
-                    console.log('🔒 To fix: Go to Strapi admin and click PUBLISH button');
-                } else {
-                    console.log('ℹ️ No content found for:', fileName);
-                    console.log('💡 Create Strapi entry with fileName: "' + fileName + '" and publish it');
-                }
-            } else {
-                console.log('ℹ️ No entries found');
+            // Find matching file
+            let content = data.data.find(item => item.attributes.fileName === fileName);
+            if (!content) {
+                const baseFileName = fileName.replace('.html', '');
+                content = data.data.find(item => item.attributes.fileName === baseFileName);
+            }
+            if (!content) {
+                const fullFileName = fileName.includes('.html') ? fileName : fileName + '.html';
+                content = data.data.find(item => item.attributes.fileName === fullFileName);
+            }
+            
+            // Apply only if published
+            if (content && content.attributes.publishedAt) {
+                applyMetaTags(content.attributes);
             }
         } catch (error) {
-            console.log('❌ Error:', error.message);
+            // Fail silently
         }
     }
     
-    function applyContent(content) {
-        console.log('🔍 Applying content:', content);
-        
-        // Update HTML title (keep htmlTitle separate)
+    function applyMetaTags(content) {
+        // Update document title
         if (content.htmlTitle) {
-            console.log('📝 Updating HTML title from:', document.title, 'to:', content.htmlTitle);
             document.title = content.htmlTitle;
-            console.log('✅ HTML title updated to:', document.title);
         }
         
-        // Update meta title (separate from HTML title)
-        if (content.Meta_Title) {
-            console.log('📝 Updating meta title to:', content.Meta_Title);
-            updateMeta('title', content.Meta_Title);
+        // Update meta description
+        if (content.metaDescription) {
+            updateMeta('description', content.metaDescription);
         }
         
-        // Update meta description (use only new field)
-        if (content.Meta_Description) {
-            console.log('📝 Updating meta description to:', content.Meta_Description);
-            updateMeta('description', content.Meta_Description);
+        // Update meta keywords
+        if (content.metaKeywords) {
+            updateMeta('keywords', content.metaKeywords);
         }
         
-        // Update meta keywords (use only new field)
-        if (content.Keywords) {
-            console.log('📝 Updating meta keywords to:', content.Keywords);
-            updateMeta('keywords', content.Keywords);
-        }
-        
-        // Update canonical URL
-        if (content.Canonical_URL) {
-            console.log('📝 Updating canonical URL to:', content.Canonical_URL);
-            updateCanonical(content.Canonical_URL);
-        }
-        
-        // Update robots tag
-        if (content.Robots_Tag) {
-            console.log('📝 Updating robots tag to:', content.Robots_Tag);
-            updateMeta('robots', content.Robots_Tag);
-        }
-        
-        // Update author tag
-        if (content.Author_Meta_Tag) {
-            console.log('📝 Updating author tag to:', content.Author_Meta_Tag);
-            updateMeta('author', content.Author_Meta_Tag);
-        }
-        
-        // Update publisher tag
-        if (content.Publisher_Meta_Tag) {
-            console.log('📝 Updating publisher tag to:', content.Publisher_Meta_Tag);
-            updateMeta('publisher', content.Publisher_Meta_Tag);
-        }
-        
-        // Update body content
+        // Update body content if provided
         if (content.bodyContent) {
-            console.log('📝 Updating body content');
-            updateBodyContentSafe(content.bodyContent);
+            replaceBodyContent(content.bodyContent);
         }
     }
     
     function updateMeta(name, content) {
-        // Remove all existing meta tags with this name to avoid duplicates
-        const existingMetas = document.querySelectorAll(`meta[name="${name}"]`);
-        existingMetas.forEach(meta => meta.remove());
-        
-        // Create new meta tag
-        const meta = document.createElement('meta');
-        meta.name = name;
-        meta.content = content;
-        document.head.appendChild(meta);
-        console.log(`✅ Updated meta ${name}:`, content);
-    }
-    
-    function updateCanonical(url) {
-        let canonical = document.querySelector('link[rel="canonical"]');
-        if (canonical) {
-            canonical.href = url;
-            console.log('✅ Updated canonical URL:', url);
-        } else {
-            canonical = document.createElement('link');
-            canonical.rel = 'canonical';
-            canonical.href = url;
-            document.head.appendChild(canonical);
-            console.log('✅ Created canonical URL:', url);
+        let meta = document.querySelector(`meta[name="${name}"]`);
+        if (meta) {
+            meta.content = content;
         }
     }
     
-    function updateBodyContentSafe(newContent) {
-        console.log('🔍 Starting body content update...');
+    function replaceBodyContent(newContent) {
+        // Parse new content
+        const temp = document.createElement('div');
+        temp.innerHTML = newContent;
         
-        // Create a temporary container to parse the new content
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = newContent;
+        // Get all text elements from new content
+        const newElements = temp.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, li, td, th');
         
-        // Get text-containing elements from new content
-        const newElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, li, td, th, a, strong, em, b, i, u, div');
-        
-        newElements.forEach((newEl, newIndex) => {
-            const tagName = newEl.tagName.toLowerCase();
-            const newTextContent = newEl.textContent.trim();
+        newElements.forEach(newEl => {
+            const text = newEl.textContent.trim();
+            if (!text) return;
             
-            // Skip empty elements
-            if (!newTextContent) return;
+            // Find matching element in page by tag and position
+            const tag = newEl.tagName.toLowerCase();
+            const pageElements = document.querySelectorAll(tag);
+            const newIndex = Array.from(temp.querySelectorAll(tag)).indexOf(newEl);
             
-            // If element has an ID, use ID selector for precise matching
-            if (newEl.id) {
-                const existingEl = document.querySelector(`#${newEl.id}`);
-                if (existingEl && existingEl.textContent.trim() !== newTextContent) {
-                    updateOnlyDirectText(existingEl, newTextContent);
-                    console.log(`✅ Updated text in element: #${newEl.id}`);
-                }
-                return;
-            }
-            
-            // For elements without ID, match by tag type and position
-            const existingElements = document.querySelectorAll(tagName);
-            
-            if (existingElements.length > 0) {
-                // Find elements of same type from the new content
-                const newElementsOfSameType = Array.from(tempDiv.querySelectorAll(tagName));
-                const positionInType = newElementsOfSameType.indexOf(newEl);
-                
-                // Update the corresponding element by position within that tag type
-                if (positionInType < existingElements.length) {
-                    const existingEl = existingElements[positionInType];
-                    if (existingEl.textContent.trim() !== newTextContent) {
-                        updateOnlyDirectText(existingEl, newTextContent);
-                        console.log(`✅ Updated text in ${tagName} at position ${positionInType}`);
-                    }
-                }
+            if (pageElements[newIndex]) {
+                // Only replace text content, keep all attributes and structure
+                pageElements[newIndex].textContent = text;
             }
         });
-        
-        console.log('✅ Body content update completed');
-    }
-    
-    function updateOnlyDirectText(element, newText) {
-        // Find the first direct text node and update only that
-        for (let i = 0; i < element.childNodes.length; i++) {
-            const node = element.childNodes[i];
-            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-                node.textContent = newText;
-                console.log('✅ Updated direct text node only');
-                return;
-            }
-        }
-        
-        // If no text node found, create one at the beginning
-        const textNode = document.createTextNode(newText);
-        element.insertBefore(textNode, element.firstChild);
-        console.log('✅ Created new direct text node');
-    }
-    
-    function getCurrentMetaTags() {
-        const metaTags = {
-            title: document.title,
-            description: document.querySelector('meta[name="description"]')?.content || '',
-            keywords: document.querySelector('meta[name="keywords"]')?.content || '',
-            canonical: document.querySelector('link[rel="canonical"]')?.href || '',
-            robots: document.querySelector('meta[name="robots"]')?.content || '',
-            author: document.querySelector('meta[name="author"]')?.content || '',
-            publisher: document.querySelector('meta[name="publisher"]')?.content || ''
-        };
-        console.log('📋 Current meta tags:', metaTags);
-        return metaTags;
     }
     
     document.addEventListener('DOMContentLoaded', loadContent);
     window.refreshCMS = loadContent;
-    window.getCurrentMetaTags = getCurrentMetaTags;
     
 })();
