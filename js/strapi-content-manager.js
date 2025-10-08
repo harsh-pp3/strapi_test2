@@ -143,19 +143,47 @@
     function updateBodyContent(newContent) {
         console.log('📝 Body content from Strapi:', newContent);
         
-        // Find main content area - try common selectors
-        const contentArea = document.querySelector('article') || 
-                           document.querySelector('main') || 
-                           document.querySelector('.content') ||
-                           document.querySelector('#content');
+        // Parse new content
+        const temp = document.createElement('div');
+        temp.innerHTML = newContent;
         
-        if (contentArea) {
-            // Replace innerHTML but preserve structure
-            contentArea.innerHTML = newContent;
-            console.log('✅ Body content updated in:', contentArea.tagName);
-        } else {
-            console.log('⚠️ No content area found');
+        // Get all text nodes from new content
+        const walker = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT);
+        const newTexts = [];
+        let node;
+        while (node = walker.nextNode()) {
+            const text = node.textContent.trim();
+            if (text) newTexts.push(text);
         }
+        
+        console.log('🔍 Found', newTexts.length, 'text nodes in new content');
+        
+        // Get all text nodes from body
+        const bodyWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        const bodyTexts = [];
+        while (node = bodyWalker.nextNode()) {
+            const text = node.textContent.trim();
+            if (text && !node.parentElement.closest('script, style, noscript')) {
+                bodyTexts.push(node);
+            }
+        }
+        
+        console.log('🔍 Found', bodyTexts.length, 'text nodes in body');
+        
+        // Replace only changed text nodes
+        let updated = 0;
+        newTexts.forEach((newText, index) => {
+            if (bodyTexts[index]) {
+                const oldText = bodyTexts[index].textContent.trim();
+                if (oldText !== newText) {
+                    bodyTexts[index].textContent = newText;
+                    updated++;
+                    console.log(`✅ Updated text ${index + 1}: "${oldText}" -> "${newText}"`);
+                }
+            }
+        });
+        
+        console.log(`✅ Updated ${updated} text nodes`);
     }
     
     document.addEventListener('DOMContentLoaded', loadContent);
