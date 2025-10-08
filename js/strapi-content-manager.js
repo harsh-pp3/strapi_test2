@@ -147,43 +147,45 @@
         const temp = document.createElement('div');
         temp.innerHTML = newContent;
         
-        // Get all text nodes from new content
-        const walker = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT);
-        const newTexts = [];
-        let node;
-        while (node = walker.nextNode()) {
-            const text = node.textContent.trim();
-            if (text) newTexts.push(text);
-        }
+        // Get elements with text from new content
+        const newElements = temp.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, li, td, th, a, div');
         
-        console.log('🔍 Found', newTexts.length, 'text nodes in new content');
+        console.log('🔍 Found', newElements.length, 'elements in new content');
         
-        // Get all text nodes from body
-        const bodyWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        const bodyTexts = [];
-        while (node = bodyWalker.nextNode()) {
-            const text = node.textContent.trim();
-            if (text && !node.parentElement.closest('script, style, noscript')) {
-                bodyTexts.push(node);
-            }
-        }
-        
-        console.log('🔍 Found', bodyTexts.length, 'text nodes in body');
-        
-        // Replace only changed text nodes
         let updated = 0;
-        newTexts.forEach((newText, index) => {
-            if (bodyTexts[index]) {
-                const oldText = bodyTexts[index].textContent.trim();
-                if (oldText !== newText) {
-                    bodyTexts[index].textContent = newText;
+        
+        // For each new element, find matching element in body
+        newElements.forEach(newEl => {
+            const newText = newEl.textContent.trim();
+            if (!newText) return;
+            
+            const tag = newEl.tagName.toLowerCase();
+            
+            // Find all elements of same tag in body
+            const bodyElements = document.body.querySelectorAll(tag);
+            
+            // Try to find exact match by comparing text content
+            for (let bodyEl of bodyElements) {
+                const bodyText = bodyEl.textContent.trim();
+                
+                // If texts are similar (at least 50% match), update it
+                if (isSimilar(bodyText, newText) && bodyText !== newText) {
+                    bodyEl.textContent = newText;
                     updated++;
-                    console.log(`✅ Updated text ${index + 1}: "${oldText}" -> "${newText}"`);
+                    console.log(`✅ Updated ${tag}: "${bodyText.substring(0, 50)}..." -> "${newText.substring(0, 50)}..."`);
+                    break;
                 }
             }
         });
         
-        console.log(`✅ Updated ${updated} text nodes`);
+        console.log(`✅ Updated ${updated} elements`);
+    }
+    
+    function isSimilar(str1, str2) {
+        // Simple similarity check - if first 20 chars match
+        const s1 = str1.substring(0, 20).toLowerCase();
+        const s2 = str2.substring(0, 20).toLowerCase();
+        return s1 === s2;
     }
     
     document.addEventListener('DOMContentLoaded', loadContent);
