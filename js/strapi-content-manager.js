@@ -17,15 +17,21 @@
             const data = await response.json();
             if (!data.data || data.data.length === 0) return;
             
-            // Find matching file
-            let content = data.data.find(item => item.attributes.fileName === fileName);
+            // Find matching file (case-insensitive)
+            let content = data.data.find(item => 
+                item.attributes.fileName.toLowerCase() === fileName.toLowerCase()
+            );
             if (!content) {
                 const baseFileName = fileName.replace('.html', '');
-                content = data.data.find(item => item.attributes.fileName === baseFileName);
+                content = data.data.find(item => 
+                    item.attributes.fileName.toLowerCase() === baseFileName.toLowerCase()
+                );
             }
             if (!content) {
                 const fullFileName = fileName.includes('.html') ? fileName : fileName + '.html';
-                content = data.data.find(item => item.attributes.fileName === fullFileName);
+                content = data.data.find(item => 
+                    item.attributes.fileName.toLowerCase() === fullFileName.toLowerCase()
+                );
             }
             
             // Apply only if published
@@ -120,10 +126,12 @@
                 
                 const pageText = pageEl.textContent.trim();
                 
-                // Check if texts are similar (first 30 chars match) but not identical
-                const strapiStart = strapiText.substring(0, 30).toLowerCase();
-                const pageStart = pageText.substring(0, 30).toLowerCase();
+                // Check if texts are similar (first 20 chars match) but not identical
+                const minLength = Math.min(20, strapiText.length, pageText.length);
+                const strapiStart = strapiText.substring(0, minLength).toLowerCase();
+                const pageStart = pageText.substring(0, minLength).toLowerCase();
                 
+                // Only update if: same start AND different full text
                 if (strapiStart === pageStart && strapiText !== pageText) {
                     // Found a match - text starts the same but has been edited
                     pageEl.textContent = strapiText;
