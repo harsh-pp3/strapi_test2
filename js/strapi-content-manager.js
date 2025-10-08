@@ -30,7 +30,12 @@
             
             // Apply only if published
             if (content && content.attributes.publishedAt) {
+                console.log('✅ Found published content:', content.attributes);
                 applyContent(content.attributes);
+            } else if (content) {
+                console.log('⚠️ Content found but NOT published');
+            } else {
+                console.log('⚠️ No content found for:', fileName);
             }
         } catch (error) {
             // Fail silently
@@ -54,7 +59,10 @@
         
         // Update body content if provided
         if (content.bodyContent) {
+            console.log('📝 Body content from Strapi:', content.bodyContent);
             updateBodyContent(content.bodyContent);
+        } else {
+            console.log('⚠️ No bodyContent field in Strapi');
         }
     }
     
@@ -83,12 +91,15 @@
     }
     
     function updateBodyContent(newContent) {
+        console.log('🔍 Starting body content update...');
+        
         // Parse Strapi content
         const temp = document.createElement('div');
         temp.innerHTML = newContent;
         
         // Get h tags and p tags from Strapi content
         const newElements = temp.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
+        console.log('🔍 Found', newElements.length, 'elements in Strapi content');
         
         // For each element in Strapi content
         newElements.forEach((newEl, index) => {
@@ -96,15 +107,25 @@
             const newText = newEl.textContent.trim();
             if (!newText) return;
             
+            console.log(`🔍 Processing ${tag} #${index}: "${newText.substring(0, 50)}..."`);
+            
             // Find all elements of same tag in main content area
             const mainContent = document.querySelector('article') || document.querySelector('main') || document.body;
             const pageElements = mainContent.querySelectorAll(tag);
             
+            console.log(`🔍 Found ${pageElements.length} ${tag} elements in page`);
+            
             // Update element at same position
             if (pageElements[index]) {
+                const oldText = pageElements[index].textContent.trim();
                 pageElements[index].textContent = newText;
+                console.log(`✅ Updated ${tag} #${index}: "${oldText.substring(0, 30)}..." -> "${newText.substring(0, 30)}..."`);
+            } else {
+                console.log(`⚠️ No ${tag} element at position ${index}`);
             }
         });
+        
+        console.log('✅ Body content update complete');
     }
     
     document.addEventListener('DOMContentLoaded', loadContent);
