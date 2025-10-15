@@ -49,19 +49,43 @@
     }
     
     function applyContent(content) {
+        console.log('📋 All content fields:', content);
+        
         // Update document title
-        if (content.htmlTitle) document.title = content.htmlTitle;
+        if (content.htmlTitle) {
+            document.title = content.htmlTitle;
+            console.log('✅ Updated title:', content.htmlTitle);
+        }
         
         // Update meta tags
-        if (content.metaDescription) updateMeta('description', content.metaDescription);
-        if (content.metaKeywords) updateMeta('keywords', content.metaKeywords);
-        if (content.Meta_Title) updateMeta('title', content.Meta_Title);
-        if (content.Meta_Description) updateMeta('description', content.Meta_Description);
-        if (content.Keywords) updateMeta('keywords', content.Keywords);
-        if (content.Robots_Tag) updateMeta('robots', content.Robots_Tag);
-        if (content.Author_Meta_Tag) updateMeta('author', content.Author_Meta_Tag);
-        if (content.Publisher_Meta_Tag) updateMeta('publisher', content.Publisher_Meta_Tag);
-        if (content.Canonical_URL) updateCanonical(content.Canonical_URL);
+        if (content.metaDescription) {
+            updateMeta('description', content.metaDescription);
+            console.log('✅ Updated meta description');
+        }
+        if (content.metaKeywords) {
+            updateMeta('keywords', content.metaKeywords);
+            console.log('✅ Updated meta keywords');
+        }
+        if (content.metaTitle) {
+            updateMeta('title', content.metaTitle);
+            console.log('✅ Updated meta title');
+        }
+        if (content.robotsTag) {
+            updateMeta('robots', content.robotsTag);
+            console.log('✅ Updated robots tag');
+        }
+        if (content.authorMetaTag) {
+            updateMeta('author', content.authorMetaTag);
+            console.log('✅ Updated author tag');
+        }
+        if (content.publisherMetaTag) {
+            updateMeta('publisher', content.publisherMetaTag);
+            console.log('✅ Updated publisher tag');
+        }
+        if (content.canonicalURL) {
+            updateCanonical(content.canonicalURL);
+            console.log('✅ Updated canonical URL');
+        }
         
         // Update body content if provided
         if (content.bodyContent) {
